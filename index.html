@@ -23,23 +23,26 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics.js";
 
-        // ⚠️ 已經將原本宇恩的資料庫設定移除。請朋友申請好新的 Firebase 後，將新的設定貼在這裡
+        // 您的 Firebase 設定金鑰已整合於此
         const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_PROJECT_ID.appspot.com",
-            messagingSenderId: "YOUR_SENDER_ID",
-            appId: "YOUR_APP_ID"
+            apiKey: "AIzaSyBirNxrO2ZzgbS76WjnUcuIatILT-4M4sY",
+            authDomain: "baby-s-first-grab-ritual.firebaseapp.com",
+            projectId: "baby-s-first-grab-ritual",
+            storageBucket: "baby-s-first-grab-ritual.firebasestorage.app",
+            messagingSenderId: "955825683306",
+            appId: "1:955825683306:web:ce3f0eec193de9184c8313",
+            measurementId: "G-LSSXZ6SLG4" 
         };
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
+        const analytics = getAnalytics(app); 
 
         // 將功能掛載到 window 讓 React 程式碼讀取
-        window.fb = { db, auth, collection, addDoc, onSnapshot, serverTimestamp, signInAnonymously, query, orderBy, limit };
+        window.fb = { db, auth, collection, addDoc, onSnapshot, serverTimestamp, signInAnonymously, query, orderBy, limit, analytics };
     </script>
 
     <script type="text/babel">
@@ -93,6 +96,7 @@
             const [selected, setSelected] = useState([]);
             const [voted, setVoted] = useState(localStorage.getItem('voted_yufei_final') === 'true');
             const [isSending, setIsSending] = useState(false);
+            const [imgError, setImgError] = useState(false);
 
             useEffect(() => {
                 const init = async () => {
@@ -116,6 +120,15 @@
                     });
                 };
                 init();
+            }, []);
+
+            const ageString = useMemo(() => {
+                const birth = new Date(2025, 4, 8); 
+                const today = new Date();
+                const diff = today - birth;
+                const d = Math.floor(diff / (1000 * 60 * 60 * 24));
+                if (d < 0) return "期待降落中 ☁️"; 
+                return `${Math.floor(d / 365)}Y ${Math.floor((d % 365) / 30)}M ${d % 30}D`;
             }, []);
 
             const submitVote = async () => {
@@ -149,6 +162,7 @@
                 setIsSending(false);
             };
 
+            // 補回處理點擊物品的函式
             const toggleSelection = (id) => {
                 if (selected.includes(id)) {
                     setSelected(selected.filter(item => item !== id));
@@ -209,114 +223,4 @@
                             <h1 className="text-2xl font-bold text-[#6B5A4E] text-center mb-6 tracking-widest">目前預測戰況</h1>
                             <div className="bg-white p-6 rounded-3xl shadow-sm border border-[#F2E8DA]">
                                 {votes.length === 0 ? (
-                                    <p className="text-center text-[#8C7A6D]">目前還沒有人投票喔，趕快去投下神聖的一票！</p>
-                                ) : (
-                                    (() => {
-                                        // 計算票數
-                                        const counts = {};
-                                        votes.forEach(vote => {
-                                            vote.items.forEach(itemId => {
-                                                counts[itemId] = (counts[itemId] || 0) + 1;
-                                            });
-                                        });
-                                        
-                                        // 排序並取最高票作為進度條比例基準
-                                        const sortedResults = Object.keys(counts)
-                                            .map(id => ({ id, count: counts[id], item: ITEMS.find(i => i.id === id) }))
-                                            .sort((a, b) => b.count - a.count);
-                                            
-                                        const maxVotes = sortedResults.length > 0 ? sortedResults[0].count : 1;
-
-                                        return sortedResults.map((result, index) => (
-                                            <div key={result.id} className="mb-4 last:mb-0">
-                                                <div className="flex justify-between items-end mb-1">
-                                                    <span className="text-sm font-medium text-[#6B5A4E] flex items-center gap-2">
-                                                        <span>{result.item.emoji}</span> {result.item.name}
-                                                    </span>
-                                                    <span className="text-xs font-bold text-[#C2A387]">{result.count} 票</span>
-                                                </div>
-                                                <div className="w-full bg-[#F9F6F0] rounded-full h-2.5">
-                                                    <div className="bg-[#C2A387] h-2.5 rounded-full transition-all duration-1000" style={{ width: `${(result.count / maxVotes) * 100}%` }}></div>
-                                                </div>
-                                            </div>
-                                        ));
-                                    })()
-                                )}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* ========== 3. 祝福區 ========== */}
-                    {activeTab === 'messages' && (
-                        <div className="animate-fade-in flex flex-col h-[calc(100vh-140px)]">
-                            <h1 className="text-2xl font-bold text-[#6B5A4E] text-center mb-6 tracking-widest shrink-0">給鈺霏的祝福</h1>
-                            
-                            <div className="flex-1 overflow-y-auto mb-4 space-y-4 pr-1">
-                                {messages.length === 0 ? (
-                                    <p className="text-center text-[#8C7A6D] mt-10">來搶頭香，留下第一個祝福吧！</p>
-                                ) : (
-                                    messages.map((msg, i) => (
-                                        <div key={i} className="bg-white p-4 rounded-2xl shadow-sm border border-[#F2E8DA]">
-                                            <div className="flex items-center gap-2 mb-2">
-                                                <div className="w-8 h-8 rounded-full bg-[#C2A387] text-white flex items-center justify-center font-bold text-sm">
-                                                    {msg.name.charAt(0)}
-                                                </div>
-                                                <span className="font-bold text-[#6B5A4E] text-sm">{msg.name}</span>
-                                            </div>
-                                            <p className="text-[#8C7A6D] text-sm whitespace-pre-wrap">{msg.text}</p>
-                                        </div>
-                                    ))
-                                )}
-                            </div>
-
-                            <div className="shrink-0 bg-white p-4 rounded-3xl shadow-sm border border-[#F2E8DA]">
-                                <input 
-                                    className="w-full p-3 mb-2 rounded-xl bg-[#F9F6F0] border-none focus:ring-2 focus:ring-[#D4BCA1] outline-none text-sm" 
-                                    placeholder="您的名字 (若投票有填寫會自動帶入)" 
-                                    value={name} 
-                                    onChange={e=>setName(e.target.value)} 
-                                />
-                                <div className="flex gap-2">
-                                    <textarea 
-                                        className="flex-1 p-3 rounded-xl bg-[#F9F6F0] border-none focus:ring-2 focus:ring-[#D4BCA1] outline-none text-sm resize-none" 
-                                        rows="2" 
-                                        placeholder="寫下想對鈺霏說的話..." 
-                                        value={msgText} 
-                                        onChange={e=>setMsgText(e.target.value)}
-                                    ></textarea>
-                                    <button 
-                                        onClick={submitMessage}
-                                        disabled={isSending || !name || !msgText}
-                                        className="bg-[#C2A387] text-white p-4 rounded-xl flex items-center justify-center disabled:opacity-50 transition-all"
-                                    >
-                                        <Send size={20} />
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* ========== 底部導覽列 ========== */}
-                    <div className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-[#F2E8DA] px-6 py-4 flex justify-around items-center max-w-md mx-auto z-50">
-                        <button onClick={() => setActiveTab('vote')} className={`flex flex-col items-center gap-1 transition-colors ${activeTab === 'vote' ? 'text-[#C2A387]' : 'text-[#D4BCA1]'}`}>
-                            <Home size={24} />
-                            <span className="text-[10px] font-bold">預測</span>
-                        </button>
-                        <button onClick={() => setActiveTab('results')} className={`flex flex-col items-center gap-1 transition-colors ${activeTab === 'results' ? 'text-[#C2A387]' : 'text-[#D4BCA1]'}`}>
-                            <BarChart2 size={24} />
-                            <span className="text-[10px] font-bold">戰況</span>
-                        </button>
-                        <button onClick={() => setActiveTab('messages')} className={`flex flex-col items-center gap-1 transition-colors ${activeTab === 'messages' ? 'text-[#C2A387]' : 'text-[#D4BCA1]'}`}>
-                            <MessageCircle size={24} />
-                            <span className="text-[10px] font-bold">祝福</span>
-                        </button>
-                    </div>
-                </div>
-            );
-        }
-
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
-    </script>
-</body>
-</html>
+                                    <p className="text-center text-[#8C7A6D]">目前
