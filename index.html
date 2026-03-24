@@ -23,6 +23,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        // 導入 getAnalytics
         import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics.js";
 
         // 您的 Firebase 設定金鑰已整合於此
@@ -33,13 +34,13 @@
             storageBucket: "baby-s-first-grab-ritual.firebasestorage.app",
             messagingSenderId: "955825683306",
             appId: "1:955825683306:web:ce3f0eec193de9184c8313",
-            measurementId: "G-LSSXZ6SLG4" 
+            measurementId: "G-LSSXZ6SLG4" // 新增 measurementId
         };
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const analytics = getAnalytics(app); 
+        const analytics = getAnalytics(app); // 初始化 Analytics
 
         // 將功能掛載到 window 讓 React 程式碼讀取
         window.fb = { db, auth, collection, addDoc, onSnapshot, serverTimestamp, signInAnonymously, query, orderBy, limit, analytics };
@@ -58,6 +59,7 @@
         const Sparkles = (props) => <SvgIcon {...props} strokeWidth="1.5"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4M3 5h4M19 3v4M17 5h4M5 19v4M3 21h4"/></SvgIcon>;
         const Send = (props) => <SvgIcon {...props}><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></SvgIcon>;
         const CheckCircle2 = (props) => <SvgIcon {...props}><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></SvgIcon>;
+        const Heart = (props) => <SvgIcon {...props}><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></SvgIcon>;
 
         // 依照附圖完整更新 24 項抓周物品
         const ITEMS = [
@@ -103,14 +105,17 @@
                     while(!window.fb) await new Promise(r => setTimeout(r, 100));
                     const { db, auth, collection, onSnapshot, signInAnonymously } = window.fb;
                     
+                    // 🌟 防卡死保護罩：如果無痕模式阻擋登入，跳過錯誤繼續拉取資料
                     try {
                         await signInAnonymously(auth);
                     } catch (error) {
                         console.warn("被無痕模式擋住登入，已啟動備用讀取模式");
                     }
                     
+                    // 即時監聽投票
                     onSnapshot(collection(db, "votes"), s => setVotes(s.docs.map(d => d.data())));
                     
+                    // 即時監聽留言 (安全時間排序，防報錯)
                     onSnapshot(collection(db, "messages"), s => {
                         const msgs = s.docs.map(d => {
                             const data = d.data();
@@ -122,12 +127,13 @@
                 init();
             }, []);
 
+            // 更新鈺霏的生日計算: 2025/05/08 (JavaScript 中月份從 0 開始，所以 5月 是 4)
             const ageString = useMemo(() => {
                 const birth = new Date(2025, 4, 8); 
                 const today = new Date();
                 const diff = today - birth;
                 const d = Math.floor(diff / (1000 * 60 * 60 * 24));
-                if (d < 0) return "期待降落中 ☁️"; 
+                if (d < 0) return "期待降落中 ☁️"; // 如果還沒出生防呆顯示
                 return `${Math.floor(d / 365)}Y ${Math.floor((d % 365) / 30)}M ${d % 30}D`;
             }, []);
 
@@ -162,15 +168,6 @@
                 setIsSending(false);
             };
 
-            // 補回處理點擊物品的函式
-            const toggleSelection = (id) => {
-                if (selected.includes(id)) {
-                    setSelected(selected.filter(item => item !== id));
-                } else if (selected.length < 3) {
-                    setSelected([...selected, id]);
-                }
-            };
-
             return (
                 <div className="max-w-md mx-auto min-h-screen pb-28 px-4 pt-8">
                     {/* ========== 1. 投票區 ========== */}
@@ -181,46 +178,3 @@
                                 <div className="bg-white p-6 rounded-3xl shadow-sm border border-[#F2E8DA]">
                                     <input className="w-full p-4 mb-4 rounded-2xl border-2 border-[#F2E8DA] focus:border-[#D4BCA1] outline-none" placeholder="您怎麼稱呼？ (例：大阿姨)" value={name} onChange={e=>setName(e.target.value)} />
                                     <p className="text-xs text-[#8C7A6D] mb-4 text-center">請選出您心目中鈺霏會抓到的 3 個物品 ({selected.length}/3)</p>
-                                    
-                                    <div className="grid grid-cols-3 gap-3 mb-6">
-                                        {ITEMS.map(item => {
-                                            const isSelected = selected.includes(item.id);
-                                            return (
-                                                <button
-                                                    key={item.id}
-                                                    onClick={() => toggleSelection(item.id)}
-                                                    className={`flex flex-col items-center justify-center p-3 rounded-2xl border-2 transition-all ${isSelected ? 'border-[#C2A387] bg-[#FDFBF7] shadow-sm' : 'border-transparent bg-[#F9F6F0] hover:bg-[#F2E8DA]'}`}
-                                                >
-                                                    <span className="text-2xl mb-1">{item.emoji}</span>
-                                                    <span className="text-xs font-medium text-[#6B5A4E]">{item.name}</span>
-                                                </button>
-                                            )
-                                        })}
-                                    </div>
-                                    
-                                    <button 
-                                        onClick={submitVote}
-                                        disabled={selected.length !== 3 || !name}
-                                        className="w-full bg-[#C2A387] text-white p-4 rounded-2xl font-bold flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                                    >
-                                        <Sparkles size={20} />
-                                        送出預測
-                                    </button>
-                                </div>
-                            ) : (
-                                <div className="bg-white p-8 rounded-3xl shadow-sm border border-[#F2E8DA] text-center">
-                                    <CheckCircle2 size={48} className="text-[#C2A387] mx-auto mb-4" />
-                                    <h2 className="text-xl font-bold text-[#6B5A4E] mb-2">預測已送出！</h2>
-                                    <p className="text-[#8C7A6D]">謝謝您的參與，點擊下方「戰況」看看大家的預測吧！</p>
-                                </div>
-                            )}
-                        </div>
-                    )}
-
-                    {/* ========== 2. 戰況區 ========== */}
-                    {activeTab === 'results' && (
-                        <div className="animate-fade-in">
-                            <h1 className="text-2xl font-bold text-[#6B5A4E] text-center mb-6 tracking-widest">目前預測戰況</h1>
-                            <div className="bg-white p-6 rounded-3xl shadow-sm border border-[#F2E8DA]">
-                                {votes.length === 0 ? (
-                                    <p className="text-center text-[#8C7A6D]">目前
