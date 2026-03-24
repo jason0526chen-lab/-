@@ -1,21 +1,46 @@
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的 Firebase 應用程式</title>
+</head>
+<body>
+    <h1>歡迎來到 Baby's First Grab Ritual！</h1>
+    <p>Firebase 應用程式已初始化。</p>
+    
+    <!-- 載入 Firebase SDK -->
+    <!-- 請確保您的專案安裝了 firebase npm 套件 -->
+    <!-- 例如：npm install firebase -->
+    <script type="module">
+        // 從 Firebase/app 導入 initializeApp 函數
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
 
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: "AIzaSyBirNxrO2ZzgbS76WjnUcuIatILT-4M4sY",
-  authDomain: "baby-s-first-grab-ritual.firebaseapp.com",
-  projectId: "baby-s-first-grab-ritual",
-  storageBucket: "baby-s-first-grab-ritual.firebasestorage.app",
-  messagingSenderId: "955825683306",
-  appId: "1:955825683306:web:ec153f92634162944c8313",
-  measurementId: "G-8QZY9EX204"
-};
+        // 您的 Firebase 設定碼
+        const firebaseConfig = {
+            apiKey: "AIzaSyBirNxrO2ZzgbS76WjnUcuIatILT-4M4sY",
+            authDomain: "baby-s-first-grab-ritual.firebaseapp.com",
+            projectId: "baby-s-first-grab-ritual",
+            storageBucket: "baby-s-first-grab-ritual.firebasestorage.app",
+            messagingSenderId: "955825683306",
+            appId: "1:955825683306:web:72440fcd726ec0f14c8313",
+            measurementId: "G-L6WKGB4FZ7"
+        };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
+        // 初始化 Firebase 應用程式
+        const app = initializeApp(firebaseConfig);
+
+        console.log("Firebase 應用程式已成功初始化！", app);
+
+        // 您可以在這裡添加更多 Firebase 產品的初始化和使用代碼
+        // 例如：
+        // import { getFirestore } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+        // const db = getFirestore(app);
+        // console.log("Firestore 已初始化！", db);
+
+        // import { getAuth } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
+        // const auth = getAuth(app);
+        // console.log("Authentication 已初始化！", auth);
+    </script>
+</body>
+</html>
