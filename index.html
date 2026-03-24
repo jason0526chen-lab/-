@@ -1,46 +1,179 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>我的 Firebase 應用程式</title>
+    <title>鈺霏的抓周大預測</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap');
+        body { font-family: 'Noto Sans TC', sans-serif; background-color: #FDFBF7; }
+        .tab-active { color: #C2A387; border-bottom: 2px solid #C2A387; }
+        .animate-fade-in { animation: fadeIn 0.5s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
 </head>
 <body>
-    <h1>歡迎來到 Baby's First Grab Ritual！</h1>
-    <p>Firebase 應用程式已初始化。</p>
-    
-    <!-- 載入 Firebase SDK -->
-    <!-- 請確保您的專案安裝了 firebase npm 套件 -->
-    <!-- 例如：npm install firebase -->
-    <script type="module">
-        // 從 Firebase/app 導入 initializeApp 函數
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
+    <div id="root"></div>
 
-        // 您的 Firebase 設定碼
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics.js"; // 引入 Google Analytics
+
+        // 您的 Firebase 設定金鑰
         const firebaseConfig = {
             apiKey: "AIzaSyBirNxrO2ZzgbS76WjnUcuIatILT-4M4sY",
             authDomain: "baby-s-first-grab-ritual.firebaseapp.com",
             projectId: "baby-s-first-grab-ritual",
             storageBucket: "baby-s-first-grab-ritual.firebasestorage.app",
             messagingSenderId: "955825683306",
-            appId: "1:955825683306:web:72440fcd726ec0f14c8313",
-            measurementId: "G-L6WKGB4FZ7"
+            appId: "1:955825683306:web:ce3f0eec193de9184c8313",
+            measurementId: "G-LSSXZ6SLG4" // 您的 Google Analytics Measurement ID
         };
 
-        // 初始化 Firebase 應用程式
         const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const analytics = getAnalytics(app); // 初始化 Google Analytics
 
-        console.log("Firebase 應用程式已成功初始化！", app);
-
-        // 您可以在這裡添加更多 Firebase 產品的初始化和使用代碼
-        // 例如：
-        // import { getFirestore } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
-        // const db = getFirestore(app);
-        // console.log("Firestore 已初始化！", db);
-
-        // import { getAuth } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
-        // const auth = getAuth(app);
-        // console.log("Authentication 已初始化！", auth);
+        // 將功能掛載到 window 讓 React 程式碼讀取
+        window.fb = { db, auth, analytics, collection, addDoc, onSnapshot, serverTimestamp, signInAnonymously, query, orderBy, limit };
     </script>
-</body>
-</html>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
+
+        const SvgIcon = ({ size = 24, className = '', fill = 'none', strokeWidth = "2", children }) => (
+          <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill={fill} stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}>{children}</svg>
+        );
+
+        const Home = (props) => <SvgIcon {...props}><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></SvgIcon>;
+        const BarChart2 = (props) => <SvgIcon {...props}><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></SvgIcon>;
+        const MessageCircle = (props) => <SvgIcon {...props}><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></SvgIcon>;
+        const Sparkles = (props) => <SvgIcon {...props} strokeWidth="1.5"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4M3 5h4M19 3v4M17 5h4M5 19v4M3 21h4"/></SvgIcon>;
+        const Send = (props) => <SvgIcon {...props}><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></SvgIcon>;
+        const CheckCircle2 = (props) => <SvgIcon {...props}><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></SvgIcon>;
+        const Heart = (props) => <SvgIcon {...props}><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></SvgIcon>;
+
+        // 依照附圖完整更新 24 項抓周物品
+        const ITEMS = [
+            { id: 'piano', name: '鋼琴', desc: '音樂家', emoji: '🎹' },
+            { id: 'baozi', name: '包子', desc: '餐飲大亨', emoji: '🥟' },
+            { id: 'camera', name: '相機', desc: '攝影師', emoji: '📷' },
+            { id: 'spatula', name: '鍋鏟', desc: '世界名廚', emoji: '🍳' },
+            { id: 'abacus', name: '算盤', desc: '會計師', emoji: '🧮' },
+            { id: 'gavel', name: '木槌', desc: '法官', emoji: '🔨' },
+            { id: 'brush', name: '毛筆', desc: '律師', emoji: '🖌️' },
+            { id: 'ruler', name: '直尺', desc: '建築師', emoji: '📏' },
+            { id: 'arrow_gun', name: '箭/槍', desc: '軍警職', emoji: '🏹' },
+            { id: 'comb', name: '木梳', desc: '造型師', emoji: '🪮' },
+            { id: 'ointment', name: '藥膏', desc: '藥劑師', emoji: '🧴' },
+            { id: 'computer', name: '電腦', desc: 'IT工程師', emoji: '💻' },
+            { id: 'syringe', name: '針筒', desc: '護理師', emoji: '💉' },
+            { id: 'ingot', name: '元寶', desc: '首富', emoji: '💰' },
+            { id: 'ball', name: '球類', desc: '運動健將', emoji: '⚽' },
+            { id: 'stethoscope', name: '聽診器', desc: '醫生', emoji: '🩺' },
+            { id: 'palette', name: '畫板', desc: '藝術家', emoji: '🎨' },
+            { id: 'blackboard', name: '黑板', desc: '教授', emoji: '👩‍🏫' },
+            { id: 'astronaut', name: '太空人', desc: '太空人', emoji: '👩‍🚀' },
+            { id: 'magnifier', name: '放大鏡', desc: '科學家', emoji: '🔍' },
+            { id: 'airplane', name: '飛機', desc: '機長', emoji: '✈️' },
+            { id: 'clapperboard', name: '場記板', desc: '導演', emoji: '🎬' },
+            { id: 'mic', name: '麥克風', desc: '主播', emoji: '🎙️' },
+            { id: 'seal', name: '官印', desc: '公務員', emoji: '💮' },
+        ];
+
+        function App() {
+            const [activeTab, setActiveTab] = useState('vote');
+            const [votes, setVotes] = useState([]);
+            const [messages, setMessages] = useState([]);
+            const [name, setName] = useState('');
+            const [msgText, setMsgText] = useState('');
+            const [selected, setSelected] = useState([]);
+            const [voted, setVoted] = useState(localStorage.getItem('voted_yufei_final') === 'true');
+            const [isSending, setIsSending] = useState(false);
+            const [imgError, setImgError] = useState(false);
+
+            useEffect(() => {
+                const init = async () => {
+                    while(!window.fb) await new Promise(r => setTimeout(r, 100));
+                    const { db, auth, collection, onSnapshot, signInAnonymously } = window.fb;
+                    
+                    // 🌟 防卡死保護罩：如果無痕模式阻擋登入，跳過錯誤繼續拉取資料
+                    try {
+                        await signInAnonymously(auth);
+                    } catch (error) {
+                        console.warn("被無痕模式擋住登入，已啟動備用讀取模式");
+                    }
+                    
+                    // 即時監聽投票
+                    onSnapshot(collection(db, "votes"), s => setVotes(s.docs.map(d => d.data())));
+                    
+                    // 即時監聽留言 (安全時間排序，防報錯)
+                    onSnapshot(collection(db, "messages"), s => {
+                        const msgs = s.docs.map(d => {
+                            const data = d.data();
+                            return { ...data, safeTime: data.time ? data.time.toMillis() : Date.now() };
+                        }).sort((a, b) => b.safeTime - a.safeTime);
+                        setMessages(msgs);
+                    });
+                };
+                init();
+            }, []);
+
+            // 更新鈺霏的生日計算: 2025/05/08 (JavaScript 中月份從 0 開始，所以 5月 是 4)
+            const ageString = useMemo(() => {
+                const birth = new Date(2025, 4, 8); 
+                const today = new Date();
+                const diff = today - birth;
+                const d = Math.floor(diff / (1000 * 60 * 60 * 24));
+                if (d < 0) return "期待降落中 ☁️"; // 如果還沒出生防呆顯示
+                return `${Math.floor(d / 365)}Y ${Math.floor((d % 365) / 30)}M ${d % 30}D`;
+            }, []);
+
+            const submitVote = async () => {
+                if(selected.length !== 3 || !name) return;
+                const { db, collection, addDoc, serverTimestamp } = window.fb;
+                try {
+                    await addDoc(collection(db, "votes"), { name, items: selected, time: serverTimestamp() });
+                    localStorage.setItem('voted_yufei_final', 'true');
+                    setVoted(true);
+                    setActiveTab('results');
+                    window.scrollTo(0, 0);
+                } catch(e) {
+                    alert('送出失敗，請重試！');
+                }
+            };
+
+            const submitMessage = async () => {
+                if(!name || !msgText) {
+                    alert('請填寫名字和祝福內容喔！');
+                    return;
+                }
+                setIsSending(true);
+                const { db, collection, addDoc, serverTimestamp } = window.fb;
+                try {
+                    await addDoc(collection(db, "messages"), { name, text: msgText, time: serverTimestamp() });
+                    setMsgText('');
+                    alert('祝福已送出！');
+                } catch(e) {
+                    alert('留言失敗，請重試！');
+                }
+                setIsSending(false);
+            };
+
+            return (
+                <div className="max-w-md mx-auto min-h-screen pb-28 px-4 pt-8">
+                    {/* ========== 1. 投票區 ========== */}
+                    {activeTab === 'vote' && (
+                        <div className="animate-fade-in">
+                            <h1 className="text-2xl font-bold text-[#6B5A4E] text-center mb-6 tracking-widest">鈺霏的抓周預測</h1>
+                            {!voted ? (
+                                <div className="bg-white p-6 rounded-3xl shadow-sm border border-[#F2E8DA]">
+                                    <input className="w-full p-4 mb-4 rounded-2xl border-2 border-[#F2E8DA] focus:border-[#D4BCA1] outline-none" placeholder="您怎麼稱呼？ (例：大阿姨)" value={name} onChange={e=>setName(e.target.value)} />
+                                    <p className="text-xs text-[#8C7A6D] mb-4 text-center">請選出您心目中鈺霏會抓到的 3 個物品 ({selected.length}/3)</p>
