@@ -23,9 +23,10 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-        import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics.js"; // 引入 Google Analytics
+        // 導入 getAnalytics
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics.js";
 
-        // 您的 Firebase 設定金鑰
+        // 您的 Firebase 設定金鑰已整合於此
         const firebaseConfig = {
             apiKey: "AIzaSyBirNxrO2ZzgbS76WjnUcuIatILT-4M4sY",
             authDomain: "baby-s-first-grab-ritual.firebaseapp.com",
@@ -33,16 +34,16 @@
             storageBucket: "baby-s-first-grab-ritual.firebasestorage.app",
             messagingSenderId: "955825683306",
             appId: "1:955825683306:web:ce3f0eec193de9184c8313",
-            measurementId: "G-LSSXZ6SLG4" // 您的 Google Analytics Measurement ID
+            measurementId: "G-LSSXZ6SLG4" // 新增 measurementId
         };
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const analytics = getAnalytics(app); // 初始化 Google Analytics
+        const analytics = getAnalytics(app); // 初始化 Analytics
 
         // 將功能掛載到 window 讓 React 程式碼讀取
-        window.fb = { db, auth, analytics, collection, addDoc, onSnapshot, serverTimestamp, signInAnonymously, query, orderBy, limit };
+        window.fb = { db, auth, collection, addDoc, onSnapshot, serverTimestamp, signInAnonymously, query, orderBy, limit, analytics };
     </script>
 
     <script type="text/babel">
